@@ -6,24 +6,57 @@ from collections import Counter
 import re
 
 load_dotenv()
-# OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-
-import os
 
 def extract_keywords(text, top_n=40):
-    # Remove special characters and digits, and convert the text to lowercase
+    excluded_words = {
+        'and', 'to', 'in', 'the', 'of', 'with', 'our', 'for',
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+        'that', 'will', 'would', 'could', 'have', 'has', 'had',
+        'it', 'we', 'them', 'they', 'are', 'been', 'or', 'as',
+        'what', 'them', 'their', 'so'
+    }
     clean_text = re.sub(r'[^\w\s]', '', text).lower()
-
-    # Tokenize the text
     words = clean_text.split()
-
-    # Count the occurrences of each word
     word_counts = Counter(words)
+    keywords = [word for word, _ in word_counts.most_common() if word not in excluded_words]
 
-    # Get the top_n keywords
-    keywords = [word for word, _ in word_counts.most_common(top_n)]
-
-    return ', '.join(keywords)
+    return ', '.join(keywords[:top_n])
+def main_area():
+    st.markdown(
+        """
+        <style>
+        .a4_textarea {
+            border: 3px solid #ADD8E6;
+            box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.25);
+            height: 1123px;
+            width: 794px;
+            padding: 20px;
+            margin: 0 auto;
+            background-color: white;
+        }
+        .top_bar {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background-color: #ADD8E6;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .top_bar button {
+            box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.15);
+            margin-right: 10px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.write('<div class="top_bar"><button class="top_bar button">Resume</button><button class="top_bar button">Cover Letter</button></div>', unsafe_allow_html=True)
+    enhanced_resume = st.empty()
+    st.write('<div class="a4_textarea">', unsafe_allow_html=True)
+    enhanced_resume.markdown("", unsafe_allow_html=True)
+    st.write('</div>', unsafe_allow_html=True)
+    return enhanced_resume
 
 def reword_resume(resume, job_description, keywords):
     openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -45,10 +78,8 @@ def reword_resume(resume, job_description, keywords):
     suggestions = response.choices[0].message['content'].strip()
     return suggestions
 
-# Layout
 st.set_page_config(page_title='Resume Editor', layout='wide')
 
-# Sidebar
 st.sidebar.header('Resume Editor')
 resume = st.sidebar.text_area('Paste your resume here:')
 job_description = st.sidebar.text_area('Paste the job description here:')
@@ -60,29 +91,8 @@ if submit_button and resume and job_description:
     st.sidebar.text_area('Top ATS Keywords', value=keywords, height=270)
     enhanced_resume = reword_resume(resume, job_description, keywords)
     st.header('Your Enhanced Resume')
-    st.write(enhanced_resume)
+    main_area().markdown(enhanced_resume, unsafe_allow_html=True)
 else:
     st.sidebar.text_area('Top ATS Keywords', height=270)
     st.header('Your Enhanced Resume')
-
-
-
-
-
-
-
-
-# Main area
-# st.header('Your Enhanced Resume')
-# enhanced_resume_area = st.empty()
-
-# Handle form submission
-if submit_button and resume and job_description:
-    enhanced_resume = reword_resume(resume, job_description, keywords)
-
-    enhanced_resume_area.write(enhanced_resume)
-    keywords = extract_keywords(job_description)
-    st.sidebar.text_area('Top ATS Keywords', value=keywords, height=270)
-
-
-
+    main_area()
